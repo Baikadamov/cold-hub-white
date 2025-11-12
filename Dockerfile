@@ -12,7 +12,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 # Устанавливаем зависимости
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Этап сборки приложения
 FROM base AS builder
