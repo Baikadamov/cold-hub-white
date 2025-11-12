@@ -2,9 +2,9 @@
 FROM node:20-alpine AS base
 
 # Устанавливаем pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN npm install -g pnpm
 
-# Этап 1: Установка зависимостей
+# Этап установки зависимостей
 FROM base AS deps
 WORKDIR /app
 
@@ -14,26 +14,24 @@ COPY package.json pnpm-lock.yaml ./
 # Устанавливаем зависимости
 RUN pnpm install --frozen-lockfile
 
-# Этап 2: Сборка приложения
+# Этап сборки приложения
 FROM base AS builder
 WORKDIR /app
 
 # Копируем зависимости из предыдущего этапа
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
 
-# Отключаем телеметрию Next.js
-ENV NEXT_TELEMETRY_DISABLED=1
+# Копируем все файлы проекта
+COPY . .
 
 # Собираем приложение
 RUN pnpm build
 
-# Этап 3: Production образ
+# Этап production
 FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
 
 # Создаем пользователя для запуска приложения
 RUN addgroup --system --gid 1001 nodejs
@@ -44,12 +42,11 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Устанавливаем правильные права
+# Устанавливаем права
 RUN chown -R nextjs:nodejs /app
 
 USER nextjs
 
-# Открываем порт
 EXPOSE 3000
 
 ENV PORT=3000
